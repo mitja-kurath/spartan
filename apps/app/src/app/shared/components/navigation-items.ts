@@ -108,6 +108,7 @@ export const sidenavItems: NavItem[] = [
 			{ label: 'Figma', url: '/figma' },
 			{ label: 'Version Support', url: '/version-support' },
 			{ label: 'Health Checks', url: '/health-checks' },
+			{ label: 'Brain Only', url: '/brain-standalone' },
 			{ label: 'Update Guide', url: '/update-guide' },
 		],
 	},

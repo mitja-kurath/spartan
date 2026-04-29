@@ -101,6 +101,7 @@ export default defineConfig(({ mode }) => {
 							'/documentation/figma',
 							'/documentation/version-support',
 							'/documentation/health-checks',
+							'/documentation/brain-standalone',
 							'/documentation/update-guide',
 
 							'/blocks/sidebar',
