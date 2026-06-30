@@ -1,6 +1,9 @@
 import type { RouteMeta } from '@analogjs/router';
 import { Component, computed, inject } from '@angular/core';
+import { injectComponentDocs } from '@spartan-ng/app/app/core/services/component-docs';
 import { PrimitiveSnippetsService } from '@spartan-ng/app/app/core/services/primitive-snippets.service';
+import { CodeRtlPreview } from '@spartan-ng/app/app/shared/code/code-rtl-preview';
+import { RtlHeader } from '@spartan-ng/app/app/shared/code/rtl-header';
 import { InstallTabs } from '@spartan-ng/app/app/shared/layout/install-tabs';
 import { SectionSubSubHeading } from '@spartan-ng/app/app/shared/layout/section-sub-sub-heading';
 import { hlmCode, hlmP } from '@spartan-ng/helm/typography';
@@ -18,9 +21,11 @@ import { metaWith } from '../../../../shared/meta/meta.util';
 import { SelectDisabledPreview } from './select--disabled.preview';
 import { SelectFormPreview } from './select--form.preview';
 import { SelectGroupPreview } from './select--group.preview';
+import { SelectInvalidPreview } from './select--invalid.preview';
 import { SelectMultiplePreview } from './select--multiple.preview';
 import { SelectObjectPreview } from './select--object.preview';
 import { SelectPlaceholderPreview } from './select--placeholder.preview';
+import { SelectRtlPreview } from './select--rtl.preview';
 import { SelectScrollablePreview } from './select--scrollable.preview';
 import { defaultImports, defaultSkeleton, defaultStyles, SelectPreview } from './select.preview';
 
@@ -45,19 +50,23 @@ export const routeMeta: RouteMeta = {
 		PageNav,
 		PageBottomNav,
 		PageBottomNavLink,
+		SectionSubSubHeading,
+		RtlHeader,
+		CodeRtlPreview,
 		SelectPreview,
 		SelectGroupPreview,
 		SelectMultiplePreview,
 		SelectScrollablePreview,
 		SelectObjectPreview,
 		SelectDisabledPreview,
+		SelectInvalidPreview,
 		SelectPlaceholderPreview,
 		SelectFormPreview,
-		SectionSubSubHeading,
+		SelectRtlPreview,
 	],
 	template: `
 		<section spartanMainSection>
-			<spartan-section-intro name="Select" lead="Select a value from a list of options." />
+			<spartan-section-intro name="Select" lead="Select a value from a list of options." showThemeToggle />
 
 			<spartan-tabs firstTab="Preview" secondTab="Code">
 				<div spartanCodePreview firstTab>
@@ -108,6 +117,14 @@ export const routeMeta: RouteMeta = {
 				<spartan-code secondTab [code]="_disabledCode()" />
 			</spartan-tabs>
 
+			<h3 id="examples__invalid" spartanH4>Invalid</h3>
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanCodePreview firstTab>
+					<spartan-select-invalid-preview />
+				</div>
+				<spartan-code secondTab [code]="_invalidCode()" />
+			</spartan-tabs>
+
 			<h3 id="examples__object-values" spartanH4>Object values</h3>
 			<spartan-tabs firstTab="Preview" secondTab="Code">
 				<div spartanCodePreview firstTab>
@@ -143,6 +160,14 @@ export const routeMeta: RouteMeta = {
 				<spartan-code secondTab [code]="_formCode()" />
 			</spartan-tabs>
 
+			<spartan-header-rtl />
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanRtlCodePreview firstTab>
+					<spartan-select-rtl />
+				</div>
+				<spartan-code secondTab [code]="_rtlCode()" />
+			</spartan-tabs>
+
 			<spartan-section-sub-heading id="brn-api">Brain API</spartan-section-sub-heading>
 			<spartan-ui-api-docs docType="brain" />
 
@@ -158,15 +183,21 @@ export const routeMeta: RouteMeta = {
 	`,
 })
 export default class SkeletonPage {
+	constructor() {
+		injectComponentDocs();
+	}
+
 	private readonly _snippets = inject(PrimitiveSnippetsService).getSnippets('select');
 	protected readonly _defaultCode = computed(() => this._snippets()['default']);
 	protected readonly _groupCode = computed(() => this._snippets()['group']);
 	protected readonly _multipleCode = computed(() => this._snippets()['multiple']);
 	protected readonly _scrollableCode = computed(() => this._snippets()['scrollable']);
 	protected readonly _disabledCode = computed(() => this._snippets()['disabled']);
+	protected readonly _invalidCode = computed(() => this._snippets()['invalid']);
 	protected readonly _objectCode = computed(() => this._snippets()['object']);
 	protected readonly _placeholderCode = computed(() => this._snippets()['placeholder']);
 	protected readonly _formCode = computed(() => this._snippets()['form']);
+	protected readonly _rtlCode = computed(() => this._snippets()['rtl']);
 	protected readonly _defaultStyles = defaultStyles;
 	protected readonly _defaultSkeleton = defaultSkeleton;
 	protected readonly _defaultImports = defaultImports;

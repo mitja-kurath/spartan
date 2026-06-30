@@ -1,7 +1,6 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import type { BooleanInput } from '@angular/cdk/coercion';
 import { TitleCasePipe } from '@angular/common';
-import { booleanAttribute, Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCheck, lucideClipboard, lucideTerminal } from '@ng-icons/lucide';
 import {
@@ -12,10 +11,11 @@ import { CLIMode, CLIModeService } from '@spartan-ng/app/app/shared/cli-mode.ser
 import { Code } from '@spartan-ng/app/app/shared/code/code';
 import { SectionSubHeading } from '@spartan-ng/app/app/shared/layout/section-sub-heading';
 import { tabBtn, tabContent } from '@spartan-ng/app/app/shared/layout/tabs';
+import { StyleService } from '@spartan-ng/app/app/shared/style.service';
 import { BrnTabs, BrnTabsContent, BrnTabsList, BrnTabsTrigger } from '@spartan-ng/brain/tabs';
 import { HlmAccordionImports } from '@spartan-ng/helm/accordion';
 import { HlmButton } from '@spartan-ng/helm/button';
-import { HlmIcon } from '@spartan-ng/helm/icon';
+
 import { HlmTabsImports } from '@spartan-ng/helm/tabs';
 import { Style, STYLES } from '@spartan-ng/registry';
 
@@ -34,7 +34,7 @@ const cliBtn =
 		HlmTabsImports,
 		NgIcon,
 		HlmButton,
-		HlmIcon,
+
 		TitleCasePipe,
 		HlmAccordionImports,
 	],
@@ -74,8 +74,8 @@ const cliBtn =
 							<button class="${cliBtn}" brnTabsTrigger="nx">Nx Plugin</button>
 						</div>
 
-						<button (click)="copyCli()" hlmBtn variant="ghost" class="ml-auto h-6 w-6">
-							<ng-icon hlm size="xs" [name]="_cliCopied ? 'lucideCheck' : 'lucideClipboard'" />
+						<button (click)="copyCli()" hlmBtn variant="ghost" size="icon-xs" class="ml-auto">
+							<ng-icon [name]="_cliCopied ? 'lucideCheck' : 'lucideClipboard'" />
 						</button>
 					</div>
 
@@ -92,7 +92,7 @@ const cliBtn =
 			<div brnTabsContent="Manual">
 				@let code = _code();
 				@let utils = _utils();
-				@let themes = _themes();
+				@let styles = _styles;
 
 				@if (code && utils) {
 					<div class="space-y-4">
@@ -134,26 +134,26 @@ const cliBtn =
 								<hlm-accordion-content class="text-muted-foreground ml-5 border-l ps-8">
 									<div
 										class="${tabContent} border-border block rounded-md bg-[#f8f8f8] dark:bg-zinc-900"
-										[brnTabs]="_activeComponentTab()"
-										(tabActivated)="onComponentTabChange($event)"
+										[brnTabs]="_styleService.style()"
+										(tabActivated)="onStyleTabChange($event)"
 									>
 										<div class="border-border/50 flex items-center gap-2 border-b px-3 py-1">
-											<div brnTabsList class="flex" aria-label="Tablist showing themes">
-												@for (theme of themes; track theme) {
-													<button class="${cliBtn}" [brnTabsTrigger]="theme">
-														{{ theme | titlecase }}
+											<div brnTabsList class="flex" aria-label="Tablist showing styles">
+												@for (style of styles; track style) {
+													<button class="${cliBtn}" [brnTabsTrigger]="style">
+														{{ style | titlecase }}
 													</button>
 												}
 											</div>
 
-											<button (click)="copyComponent()" hlmBtn variant="ghost" class="ml-auto h-6 w-6">
-												<ng-icon hlm size="xs" [name]="_componentCopied ? 'lucideCheck' : 'lucideClipboard'" />
+											<button (click)="copyComponent()" hlmBtn variant="ghost" class="ml-auto h-6 w-6" size="icon-xs">
+												<ng-icon [name]="_componentCopied ? 'lucideCheck' : 'lucideClipboard'" />
 											</button>
 										</div>
 
-										@for (theme of themes; track theme) {
-											<div [hlmTabsContent]="theme">
-												<spartan-code [code]="code[theme]" language="ts" disableCopy />
+										@for (style of styles; track style) {
+											<div [hlmTabsContent]="style">
+												<spartan-code [code]="code[style]" language="ts" disableCopy />
 											</div>
 										}
 									</div>
@@ -169,17 +169,10 @@ const cliBtn =
 export class InstallTabs {
 	private readonly _cliService = inject(CLIModeService);
 
-	public readonly showOnlyVega = input<boolean, BooleanInput>(true, { transform: booleanAttribute });
-
-	protected readonly _themes = computed(() => {
-		if (this.showOnlyVega()) {
-			return STYLES.filter((theme) => theme === 'vega');
-		}
-		return STYLES;
-	});
+	protected readonly _styleService = inject(StyleService);
+	protected readonly _styles = STYLES;
 
 	protected readonly _activeCliTab = computed(() => this._cliService.cliMode());
-	protected readonly _activeComponentTab = signal<Style>('vega');
 
 	private readonly _clipboard = inject(Clipboard);
 	private readonly _installService = inject(ManualInstallService);
@@ -201,8 +194,8 @@ export class InstallTabs {
 	}
 
 	copyComponent() {
-		const theme = this._activeComponentTab();
-		this._clipboard.copy(this._code()![theme]);
+		const style = this._styleService.style();
+		this._clipboard.copy(this._code()![style]);
 		this._flash('_componentCopied');
 	}
 
@@ -211,8 +204,8 @@ export class InstallTabs {
 		setTimeout(() => (this[key] = false), 3000);
 	}
 
-	protected onComponentTabChange($event: string) {
-		this._activeComponentTab.set($event as Style);
+	protected onStyleTabChange($event: string) {
+		this._styleService.style.set($event as Style);
 	}
 
 	protected onCliTabChange($event: string) {

@@ -1,5 +1,5 @@
 import type { FocusableOption } from '@angular/cdk/a11y';
-import { computed, DestroyRef, Directive, ElementRef, inject, isDevMode } from '@angular/core';
+import { computed, DestroyRef, Directive, ElementRef, inject, isDevMode, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { fromEvent } from 'rxjs';
 import { injectBrnAccordion, injectBrnAccordionItem } from './brn-accordion-token';
@@ -51,13 +51,19 @@ export class BrnAccordionTrigger implements FocusableOption {
 		fromEvent(this._el.nativeElement, 'focus')
 			.pipe(takeUntilDestroyed())
 			.subscribe(() => {
-				this._accordion.setActiveItem(this);
+				// Focus can land here mid-render, and setActiveItem writes the key manager's signals.
+				// untracked keeps that from throwing NG0600 (those signals aren't read by any view). #1371
+				untracked(() => this._accordion.setActiveItem(this));
 			});
 	}
 
 	protected toggle(event: Event): void {
 		event.preventDefault();
-		this._accordion.toggleItem(this._item.id);
+		if (this._state() === 'open') {
+			this._item.close();
+		} else {
+			this._item.open();
+		}
 	}
 
 	public focus() {

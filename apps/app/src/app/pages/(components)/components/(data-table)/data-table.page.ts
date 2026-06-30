@@ -1,7 +1,11 @@
 import type { RouteMeta } from '@analogjs/router';
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { injectComponentDocs } from '@spartan-ng/app/app/core/services/component-docs';
 import { PrimitiveSnippetsService } from '@spartan-ng/app/app/core/services/primitive-snippets.service';
+import { DataTableRtl } from '@spartan-ng/app/app/pages/(components)/components/(data-table)/data-table--rtl.preview';
+import { CodeRtlPreview } from '@spartan-ng/app/app/shared/code/code-rtl-preview';
+import { RtlHeader } from '@spartan-ng/app/app/shared/code/rtl-header';
 import { InstallTabs } from '@spartan-ng/app/app/shared/layout/install-tabs';
 import { link } from '@spartan-ng/app/app/shared/typography/link';
 import { hlmCode, hlmP, hlmUl } from '@spartan-ng/helm/typography';
@@ -40,10 +44,17 @@ export const routeMeta: RouteMeta = {
 		PageBottomNavLink,
 		DataTablePreview,
 		RouterLink,
+		RtlHeader,
+		CodeRtlPreview,
+		DataTableRtl,
 	],
 	template: `
 		<section spartanMainSection>
-			<spartan-section-intro name="Data Table" lead="Powerful table and datagrids similar powered by TanStack Table" />
+			<spartan-section-intro
+				name="Data Table"
+				lead="Powerful table and datagrids similar powered by TanStack Table"
+				showThemeToggle
+			/>
 
 			<spartan-tabs firstTab="Preview" secondTab="Code">
 				<div spartanCodePreview firstTab>
@@ -128,6 +139,14 @@ export const routeMeta: RouteMeta = {
 				}
 			</ul>
 
+			<spartan-header-rtl />
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanRtlCodePreview firstTab>
+					<spartan-data-table-rtl />
+				</div>
+				<spartan-code secondTab [code]="_rtlCode()" />
+			</spartan-tabs>
+
 			<spartan-page-bottom-nav>
 				<spartan-page-bottom-nav-link href="date-picker" label="Date Picker" />
 				<spartan-page-bottom-nav-link direction="previous" href="context-menu" label="Context Menu" />
@@ -137,8 +156,13 @@ export const routeMeta: RouteMeta = {
 	`,
 })
 export default class DataTablePage {
+	constructor() {
+		injectComponentDocs();
+	}
+
 	private readonly _snippets = inject(PrimitiveSnippetsService).getSnippets('data-table');
 	protected readonly _defaultCode = computed(() => this._snippets()['default']);
+	protected readonly _rtlCode = computed(() => this._snippets()['rtl']);
 	protected readonly _defaultSkeleton = defaultSkeleton;
 	protected readonly _defaultImports = defaultImports;
 

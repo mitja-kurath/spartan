@@ -11,7 +11,8 @@ import {
 import { type StyleMap } from './create-style-map';
 import type { TransformerStyle } from './transform';
 
-const ALLOWLIST = new Set(['spartan-menu-target', 'spartan-logical-sides', 'spartan-rtl-flip', 'spartan-invalid']);
+/** `spartan-*` tokens the transform intentionally leaves in place (everything else is a replaced placeholder). */
+export const STYLE_PLACEHOLDER_ALLOWLIST = new Set(['spartan-menu-target', 'spartan-logical-sides', 'spartan-invalid']);
 
 function isStringLiteralLike(node: Node): node is StringLiteral | NoSubstitutionTemplateLiteral {
 	return Node.isStringLiteral(node) || Node.isNoSubstitutionTemplateLiteral(node);
@@ -19,8 +20,8 @@ function isStringLiteralLike(node: Node): node is StringLiteral | NoSubstitution
 
 export const transformStyleMap: TransformerStyle<SourceFile> = async ({ sourceFile, styleMap }) => {
 	const matchedClasses = new Set<string>();
-	applyToHlmCalls(sourceFile, styleMap, matchedClasses);
-	applyToClassesCalls(sourceFile, styleMap, matchedClasses);
+	applyToHlmCalls(sourceFile, styleMap);
+	applyToClassesCalls(sourceFile, styleMap);
 	applyToHtmlInStrings(sourceFile, styleMap, matchedClasses);
 	applyToRawHtml(sourceFile, styleMap, matchedClasses);
 	applyToCvaCalls(sourceFile, styleMap, matchedClasses);
@@ -92,7 +93,7 @@ function applyToHtmlInStrings(sourceFile: SourceFile, styleMap: StyleMap, matche
 	});
 }
 
-function applyToClassesCalls(sourceFile: SourceFile, styleMap: StyleMap, matchedClasses: Set<string>) {
+function applyToClassesCalls(sourceFile: SourceFile, styleMap: StyleMap) {
 	sourceFile.forEachDescendant((node) => {
 		if (!Node.isCallExpression(node)) return;
 
@@ -105,32 +106,32 @@ function applyToClassesCalls(sourceFile: SourceFile, styleMap: StyleMap, matched
 		const body = firstArg.getBody();
 
 		if (isStringLiteralLike(body)) {
-			applyStyle(body, styleMap, matchedClasses);
+			applyStyle(body, styleMap);
 			return;
 		}
 
 		if (Node.isArrayLiteralExpression(body)) {
-			applyToArrayLiteral(body, styleMap, matchedClasses);
+			applyToArrayLiteral(body, styleMap);
 		}
 	});
 }
 
-function applyToArrayLiteral(arrayNode: ArrayLiteralExpression, styleMap: StyleMap, matchedClasses: Set<string>) {
+function applyToArrayLiteral(arrayNode: ArrayLiteralExpression, styleMap: StyleMap) {
 	for (const element of arrayNode.getElements()) {
 		if (isStringLiteralLike(element)) {
-			applyStyle(element, styleMap, matchedClasses);
+			applyStyle(element, styleMap);
 			continue;
 		}
 
 		element.forEachDescendant((node) => {
 			if (isStringLiteralLike(node)) {
-				applyStyle(node, styleMap, matchedClasses);
+				applyStyle(node, styleMap);
 			}
 		});
 	}
 }
 
-function applyToHlmCalls(sourceFile: SourceFile, styleMap: StyleMap, matchedClasses: Set<string>) {
+function applyToHlmCalls(sourceFile: SourceFile, styleMap: StyleMap) {
 	sourceFile.forEachDescendant((node) => {
 		if (!Node.isCallExpression(node)) return;
 
@@ -138,33 +139,34 @@ function applyToHlmCalls(sourceFile: SourceFile, styleMap: StyleMap, matchedClas
 		if (!Node.isIdentifier(expression) || expression.getText() !== 'hlm') return;
 
 		for (const arg of node.getArguments()) {
-			if (!isStringLiteralLike(arg)) continue;
-			applyStyle(arg, styleMap, matchedClasses);
+			if (isStringLiteralLike(arg)) {
+				applyStyle(arg, styleMap);
+				continue;
+			}
+
+			arg.forEachDescendant((descendant) => {
+				if (isStringLiteralLike(descendant)) {
+					applyStyle(descendant, styleMap);
+				}
+			});
 		}
 
 		removeEmptyArgumentsFromHlm(node);
 	});
 }
 
-function applyStyle(
-	stringNode: StringLiteral | NoSubstitutionTemplateLiteral,
-	styleMap: StyleMap,
-	matchedClasses: Set<string>,
-) {
+function applyStyle(stringNode: StringLiteral | NoSubstitutionTemplateLiteral, styleMap: StyleMap) {
 	const value = stringNode.getLiteralText();
 	const classes = extractSpartanClasses(value);
 
 	if (!classes.length) return;
 
-	const unmatched = classes.filter((c) => !matchedClasses.has(c));
-
-	const tailwind = unmatched.map((c) => styleMap[c]).filter((v): v is string => Boolean(v));
+	const tailwind = classes.map((c) => styleMap[c]).filter((v): v is string => Boolean(v));
 
 	let updated = value;
 
 	if (tailwind.length) {
 		updated = mergeClasses(tailwind.join(' '), value);
-		unmatched.forEach((c) => matchedClasses.add(c));
 	}
 
 	updated = removeSpartanClasses(updated);
@@ -180,7 +182,7 @@ function extractSpartanClasses(str: string) {
 function removeSpartanClasses(str: string) {
 	return str
 		.replace(/\bspartan-[\w-]+\b/g, (match) => {
-			if (ALLOWLIST.has(match)) return match;
+			if (STYLE_PLACEHOLDER_ALLOWLIST.has(match)) return match;
 			return '';
 		})
 		.replace(/\s+/g, ' ')
@@ -262,8 +264,12 @@ function applyToCvaCalls(sourceFile: SourceFile, styleMap: StyleMap, matchedClas
 				}
 
 				const variantValue = variantProp.getInitializer();
-				if (variantValue && Node.isStringLiteral(variantValue)) {
-					applyStyleToCvaString(variantValue, styleMap, matchedClasses);
+				if (variantValue && isStringLiteralLike(variantValue)) {
+					// Variant branches are mutually exclusive alternatives; each must be
+					// rewritten independently, so don't share `matchedClasses` state across them.
+					applyStyle(variantValue, styleMap);
+				} else if (variantValue && Node.isArrayLiteralExpression(variantValue)) {
+					applyToArrayLiteral(variantValue, styleMap);
 				}
 			});
 		});
@@ -312,7 +318,7 @@ function removeCnClasses(str: string) {
 	return str
 		.replace(/\bspartan-[\w-]+\b/g, (match) => {
 			// Preserve allowlisted classes
-			if (ALLOWLIST.has(match)) {
+			if (STYLE_PLACEHOLDER_ALLOWLIST.has(match)) {
 				return match;
 			}
 			return '';

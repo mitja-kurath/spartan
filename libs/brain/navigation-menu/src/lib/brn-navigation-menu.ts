@@ -11,10 +11,9 @@ import {
 	model,
 	NgZone,
 	OnDestroy,
-	signal,
 } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { computedPrevious, createHoverObservable } from '@spartan-ng/brain/core';
+import { computedPrevious, createHoverObservable, injectSkipDelay } from '@spartan-ng/brain/core';
 import { BehaviorSubject, combineLatest, merge, of, Subject } from 'rxjs';
 import { debounceTime, delay, filter, map, pairwise, startWith, switchMap, takeUntil } from 'rxjs/operators';
 import { BrnNavigationMenuItem } from './brn-navigation-menu-item';
@@ -76,10 +75,8 @@ export class BrnNavigationMenu implements OnDestroy {
 	 */
 	public readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
-	private readonly _isOpenDelayed = signal(true);
-	public readonly isOpenDelayed = this._isOpenDelayed.asReadonly();
-
-	private _skipDelayTimerRef: ReturnType<typeof setTimeout> | undefined;
+	private readonly _skipDelay = injectSkipDelay(() => this.skipDelayDuration());
+	public readonly isOpenDelayed = this._skipDelay.isOpenDelayed;
 
 	private readonly _navAndSubnavMenuItems = contentChildren(BrnNavigationMenuItem, { descendants: true });
 
@@ -131,18 +128,8 @@ export class BrnNavigationMenu implements OnDestroy {
 
 	constructor() {
 		effect(() => {
-			const isOpen = this.value() !== undefined;
-			const hasSkipDelayDuration = this.skipDelayDuration() > 0;
-
-			if (isOpen) {
-				clearTimeout(this._skipDelayTimerRef);
-				if (hasSkipDelayDuration) this._isOpenDelayed.set(false);
-			} else {
-				clearTimeout(this._skipDelayTimerRef);
-				this._skipDelayTimerRef = setTimeout(() => {
-					this._isOpenDelayed.set(true);
-				}, this.skipDelayDuration());
-			}
+			if (this.value() !== undefined) this._skipDelay.open();
+			else this._skipDelay.close();
 		});
 
 		combineLatest([this._hovered$, this._contentHovered$, this._anyTriggerHovered$])
@@ -182,6 +169,22 @@ export class BrnNavigationMenu implements OnDestroy {
 		this._keyManager().setActiveItem(item);
 	}
 
+	/** Focuses the sibling trigger/link `delta` steps from `current`, skipping disabled ones. @internal */
+	public focusSibling(current: FocusableOption, delta: 1 | -1): boolean {
+		const items = this._triggersAndLinks();
+		const idx = items.indexOf(current);
+		if (idx === -1) return false;
+
+		for (let i = idx + delta; i >= 0 && i < items.length; i += delta) {
+			const candidate = items[i];
+			if (!candidate.disabled) {
+				this._keyManager().setActiveItem(candidate);
+				return true;
+			}
+		}
+		return false;
+	}
+
 	protected handleKeydown(event: KeyboardEvent) {
 		this._keyManager().onKeydown(event);
 	}
@@ -189,6 +192,5 @@ export class BrnNavigationMenu implements OnDestroy {
 	ngOnDestroy() {
 		this._destroy$.next();
 		this._destroy$.complete();
-		clearTimeout(this._skipDelayTimerRef);
 	}
 }

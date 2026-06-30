@@ -27,7 +27,6 @@ import {
 import { HlmAvatarImports } from '@spartan-ng/helm/avatar';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
-import { HlmIcon } from '@spartan-ng/helm/icon';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import { HlmSelectImports } from '@spartan-ng/helm/select';
 import { HlmTableImports } from '@spartan-ng/helm/table';
@@ -62,7 +61,6 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 		HlmDropdownMenuImports,
 		HlmTableImports,
 		HlmButtonImports,
-		HlmIcon,
 		HlmSelectImports,
 		TableActions,
 		NgIcon,
@@ -116,7 +114,7 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 
 				<ng-template #profile>
 					<hlm-dropdown-menu class="min-w-56">
-						<div class="flex flex-col space-y-1" hlmDropdownMenuItem>
+						<div class="flex flex-col items-start gap-1" hlmDropdownMenuItem>
 							<p class="text-sm leading-none font-medium">spartan</p>
 							<p class="text-muted-foreground text-xs leading-none">m&#64;example.com</p>
 						</div>
@@ -126,19 +124,19 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 						<hlm-dropdown-menu-group>
 							<hlm-dropdown-menu-group>
 								<button hlmDropdownMenuItem>
-									<ng-icon hlm name="lucideUser" />
+									<ng-icon name="lucideUser" />
 									<span>Profile</span>
 									<hlm-dropdown-menu-shortcut>⇧⌘P</hlm-dropdown-menu-shortcut>
 								</button>
 
 								<button hlmDropdownMenuItem>
-									<ng-icon hlm name="lucideLayers" />
+									<ng-icon name="lucideLayers" />
 									<span>Billing</span>
 									<hlm-dropdown-menu-shortcut>⌘B</hlm-dropdown-menu-shortcut>
 								</button>
 
 								<button hlmDropdownMenuItem>
-									<ng-icon hlm name="lucideCog" />
+									<ng-icon name="lucideCog" />
 									<span>Settings</span>
 									<hlm-dropdown-menu-shortcut>⌘S</hlm-dropdown-menu-shortcut>
 								</button>
@@ -147,7 +145,7 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 							<hlm-dropdown-menu-separator />
 
 							<button hlmDropdownMenuItem>
-								<ng-icon hlm name="lucideLogOut" />
+								<ng-icon name="lucideLogOut" />
 								<span>Logout</span>
 								<hlm-dropdown-menu-shortcut>⇧⌘Q</hlm-dropdown-menu-shortcut>
 							</button>
@@ -240,7 +238,7 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 							[disabled]="!table.getCanPreviousPage()"
 							(click)="table.firstPage()"
 						>
-							<ng-icon hlm name="lucideChevronsLeft" size="sm" />
+							<ng-icon name="lucideChevronsLeft" />
 						</button>
 						<button
 							size="icon-sm"
@@ -249,7 +247,7 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 							[disabled]="!table.getCanPreviousPage()"
 							(click)="table.previousPage()"
 						>
-							<ng-icon hlm name="lucideChevronLeft" size="sm" />
+							<ng-icon name="lucideChevronLeft" />
 						</button>
 						<button
 							size="icon-sm"
@@ -258,7 +256,7 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 							[disabled]="!table.getCanNextPage()"
 							(click)="table.nextPage()"
 						>
-							<ng-icon hlm name="lucideChevronRight" size="sm" />
+							<ng-icon name="lucideChevronRight" />
 						</button>
 						<button
 							size="icon-sm"
@@ -267,7 +265,7 @@ import { type Task, TASK_DATA } from './services/tasks.models';
 							[disabled]="!table.getCanNextPage()"
 							(click)="table.lastPage()"
 						>
-							<ng-icon hlm name="lucideChevronsRight" size="sm" />
+							<ng-icon name="lucideChevronsRight" />
 						</button>
 					</div>
 				</div>

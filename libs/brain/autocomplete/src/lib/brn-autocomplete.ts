@@ -4,11 +4,9 @@ import {
 	afterNextRender,
 	booleanAttribute,
 	computed,
-	contentChild,
 	contentChildren,
 	Directive,
 	effect,
-	ElementRef,
 	forwardRef,
 	inject,
 	Injector,
@@ -23,7 +21,6 @@ import { BrnFieldControl, provideBrnLabelable } from '@spartan-ng/brain/field';
 import { ChangeFn, TouchFn } from '@spartan-ng/brain/forms';
 import { BrnPopover } from '@spartan-ng/brain/popover';
 import { BrnAutocompleteInput } from './brn-autocomplete-input';
-import { BrnAutocompleteInputWrapper } from './brn-autocomplete-input-wrapper';
 import { BrnAutocompleteItem } from './brn-autocomplete-item';
 import { BrnAutocompleteItemToken } from './brn-autocomplete-item.token';
 import {
@@ -80,21 +77,15 @@ export class BrnAutocomplete<T> implements BrnAutocompleteBase<T>, ControlValueA
 	});
 
 	/** The selected value of the autocomplete. */
-	public readonly value = model<T | null>(null);
+	public readonly value = model<T | undefined | null>(null);
 
 	/** The current search query. */
 	public readonly search = model<string>('');
 
-	private readonly _searchInputWrapper = contentChild(BrnAutocompleteInputWrapper, {
-		read: ElementRef,
-	});
+	private readonly _inputWidth = signal<number | null>(null);
 
 	/** @internal The width of the search input wrapper */
-	public readonly searchInputWrapperWidth = computed<number | null>(() => {
-		const inputElement = this._searchInputWrapper()?.nativeElement;
-		if (!inputElement) return null;
-		return inputElement.getBoundingClientRect().width || inputElement.offsetWidth;
-	});
+	public readonly searchInputWrapperWidth = this._inputWidth.asReadonly();
 
 	/** @internal Access all the items within the autocomplete */
 	public readonly items = contentChildren<BrnAutocompleteItem<T>>(BrnAutocompleteItemToken, {
@@ -112,7 +103,7 @@ export class BrnAutocomplete<T> implements BrnAutocompleteBase<T>, ControlValueA
 
 	private readonly _autocompleteInput = signal<BrnAutocompleteInput<T> | undefined>(undefined);
 
-	protected _onChange?: ChangeFn<T | null>;
+	protected _onChange?: ChangeFn<T | undefined | null>;
 	protected _onTouched?: TouchFn;
 
 	public readonly labelableId = computed(() => this._autocompleteInput()?.id());
@@ -152,6 +143,10 @@ export class BrnAutocomplete<T> implements BrnAutocompleteBase<T>, ControlValueA
 
 	public registerAutocompleteInput(input: BrnAutocompleteInput<T>): void {
 		return this._autocompleteInput.set(input);
+	}
+
+	public updateInputWidth(width: number | null): void {
+		this._inputWidth.set(width);
 	}
 
 	updateSearch(value: string) {
@@ -211,11 +206,11 @@ export class BrnAutocomplete<T> implements BrnAutocompleteBase<T>, ControlValueA
 	}
 
 	/** CONTROL VALUE ACCESSOR */
-	writeValue(value: T | null): void {
+	writeValue(value: T | undefined | null): void {
 		this.value.set(value);
 	}
 
-	registerOnChange(fn: ChangeFn<T | null>): void {
+	registerOnChange(fn: ChangeFn<T | undefined | null>): void {
 		this._onChange = fn;
 	}
 

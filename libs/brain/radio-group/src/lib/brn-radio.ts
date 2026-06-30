@@ -12,7 +12,6 @@ import {
 	output,
 	viewChild,
 } from '@angular/core';
-import { BrnField, provideBrnLabelable } from '@spartan-ng/brain/field';
 import { injectBrnRadioGroup } from './brn-radio-group.token';
 
 export class BrnRadioChange<T> {
@@ -29,7 +28,6 @@ const INPUT_POST_FIX = '-input';
 @Component({
 	selector: 'brn-radio',
 	exportAs: 'brnRadio',
-	providers: [provideBrnLabelable(BrnRadio)],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: {
 		class: 'brn-radio',
@@ -60,7 +58,6 @@ const INPUT_POST_FIX = '-input';
 			[attr.id]="_inputId()"
 			[checked]="_checked()"
 			[disabled]="_disabledState()"
-			[tabIndex]="_tabIndex()"
 			[attr.name]="_radioGroup.name()"
 			[attr.value]="value()"
 			[required]="required()"
@@ -79,7 +76,6 @@ export class BrnRadio<T = unknown> implements OnDestroy {
 	private static _nextUniqueId = 0;
 	private readonly _focusMonitor = inject(FocusMonitor);
 	private readonly _elementRef = inject(ElementRef);
-	private readonly _field = inject(BrnField, { optional: true });
 	protected readonly _radioGroup = injectBrnRadioGroup<T>();
 
 	/**
@@ -96,18 +92,6 @@ export class BrnRadio<T = unknown> implements OnDestroy {
 	 * Whether the radio button is checked.
 	 */
 	protected readonly _checked = computed(() => this._radioGroup.value() === this.value());
-
-	protected readonly _tabIndex = computed(() => {
-		const disabled = this._disabledState();
-		const checked = this._checked();
-		const hasSelectedRadio = this._radioGroup.value() !== undefined;
-		const isFirstRadio = this._radioGroup.radioButtons()[0] === this;
-
-		if (disabled || (!checked && (hasSelectedRadio || !isFirstRadio))) {
-			return -1;
-		}
-		return 0;
-	});
 
 	/**
 	 * The unique ID for the radio button input. If none is supplied, it will be auto-generated.
@@ -147,10 +131,7 @@ export class BrnRadio<T = unknown> implements OnDestroy {
 
 	protected readonly _inputElement = viewChild.required<ElementRef<HTMLInputElement>>('input');
 
-	public readonly labelableId = this._inputId;
-
 	constructor() {
-		this._field?.registerLabelable(this);
 		this._focusMonitor.monitor(this._elementRef, true);
 	}
 

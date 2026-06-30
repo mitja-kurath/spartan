@@ -1,9 +1,11 @@
 import type { RouteMeta } from '@analogjs/router';
 import { Component, computed, inject } from '@angular/core';
-import { provideIcons } from '@ng-icons/core';
-import { lucideTriangleAlert } from '@ng-icons/lucide';
+import { injectComponentDocs } from '@spartan-ng/app/app/core/services/component-docs';
 import { PrimitiveSnippetsService } from '@spartan-ng/app/app/core/services/primitive-snippets.service';
 import { ScrollAreaHorizontalPreview } from '@spartan-ng/app/app/pages/(components)/components/(scroll-area)/scroll-area--horizontal.preview';
+import { ScrollAreaRtlPreview } from '@spartan-ng/app/app/pages/(components)/components/(scroll-area)/scroll-area--rtl.example';
+import { CodeRtlPreview } from '@spartan-ng/app/app/shared/code/code-rtl-preview';
+import { RtlHeader } from '@spartan-ng/app/app/shared/code/rtl-header';
 import { InstallTabs } from '@spartan-ng/app/app/shared/layout/install-tabs';
 import { SectionSubSubHeading } from '@spartan-ng/app/app/shared/layout/section-sub-sub-heading';
 import { link } from '@spartan-ng/app/app/shared/typography/link';
@@ -45,13 +47,16 @@ export const routeMeta: RouteMeta = {
 		ScrollAreaHorizontalPreview,
 		SectionSubSubHeading,
 		InstallTabs,
+		RtlHeader,
+		CodeRtlPreview,
+		ScrollAreaRtlPreview,
 	],
-	providers: [provideIcons({ lucideTriangleAlert })],
 	template: `
 		<section spartanMainSection>
 			<spartan-section-intro
 				name="Scroll Area"
 				lead="Augments native scroll functionality for custom, cross-browser styling."
+				showThemeToggle
 			/>
 
 			<spartan-tabs firstTab="Preview" secondTab="Code">
@@ -91,6 +96,14 @@ export const routeMeta: RouteMeta = {
 				<spartan-code secondTab [code]="_horizontalCode()" />
 			</spartan-tabs>
 
+			<spartan-header-rtl />
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanRtlCodePreview firstTab>
+					<spartan-scroll-area-rtl-preview />
+				</div>
+				<spartan-code secondTab [code]="_rtlCode()" />
+			</spartan-tabs>
+
 			<spartan-section-sub-heading id="hlm-api">Helm API</spartan-section-sub-heading>
 			<spartan-ui-api-docs docType="helm" />
 
@@ -102,10 +115,15 @@ export const routeMeta: RouteMeta = {
 		<spartan-page-nav />
 	`,
 })
-export default class LabelPage {
+export default class ScrollAreaPage {
+	constructor() {
+		injectComponentDocs();
+	}
+
 	private readonly _snippets = inject(PrimitiveSnippetsService).getSnippets('scroll-area');
 	protected readonly _defaultCode = computed(() => this._snippets()['default']);
 	protected readonly _horizontalCode = computed(() => this._snippets()['horizontal']);
+	protected readonly _rtlCode = computed(() => this._snippets()['rtl']);
 	protected readonly _defaultSkeleton = defaultSkeleton;
 	protected readonly _defaultImports = defaultImports;
 }

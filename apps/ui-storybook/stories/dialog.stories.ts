@@ -1,9 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { provideIcons } from '@ng-icons/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideCheck } from '@ng-icons/lucide';
 import { BrnDialogRef, injectBrnDialogContext, provideBrnDialogDefaultOptions } from '@spartan-ng/brain/dialog';
 import { HlmButton, HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmContextMenuImports } from '@spartan-ng/helm/context-menu';
 import { HlmDialog, HlmDialogImports, HlmDialogService } from '@spartan-ng/helm/dialog';
+import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmInput } from '@spartan-ng/helm/input';
 import { HlmLabel } from '@spartan-ng/helm/label';
 import { HlmTableImports } from '@spartan-ng/helm/table';
@@ -15,7 +17,7 @@ const meta: Meta<HlmDialog> = {
 	tags: ['autodocs'],
 	decorators: [
 		moduleMetadata({
-			imports: [HlmDialogImports, HlmLabel, HlmButton, HlmInput],
+			imports: [HlmDialogImports, HlmLabel, HlmButton, HlmInput, NgIcon],
 		}),
 	],
 };
@@ -99,6 +101,66 @@ export const NestedDialog: Story = {
 	}),
 };
 
+@Component({
+	selector: 'dialog-context-menu-story',
+	imports: [HlmButtonImports, HlmContextMenuImports, HlmDialogImports, HlmDropdownMenuImports],
+	template: `
+		<div
+			[hlmContextMenuTrigger]="menu"
+			class="border-border flex h-[150px] w-[300px] items-center justify-center rounded-md border border-dashed text-sm"
+		>
+			Right click here
+		</div>
+
+		<ng-template #menu>
+			<hlm-dropdown-menu class="w-64">
+				<hlm-dropdown-menu-group>
+					<button inset hlmDropdownMenuItem>
+						Save
+						<hlm-dropdown-menu-shortcut>Cmd+S</hlm-dropdown-menu-shortcut>
+					</button>
+
+					<button disabled inset hlmDropdownMenuItem>
+						Archive
+						<hlm-dropdown-menu-shortcut>Cmd+A</hlm-dropdown-menu-shortcut>
+					</button>
+
+					<button hlmDropdownMenuItem inset="true" [hlmDialogTriggerFor]="dialog">
+						Print
+						<hlm-dropdown-menu-shortcut>Cmd+P</hlm-dropdown-menu-shortcut>
+					</button>
+				</hlm-dropdown-menu-group>
+			</hlm-dropdown-menu>
+		</ng-template>
+
+		<hlm-dialog #dialog>
+			<hlm-dialog-content class="sm:max-w-[425px]" *hlmDialogPortal="let ctx">
+				<hlm-dialog-header>
+					<h3 hlmDialogTitle>Print this page</h3>
+					<p hlmDialogDescription>Are you sure you want to print this page? Only print if absolutely necessary.</p>
+				</hlm-dialog-header>
+				<hlm-dialog-footer>
+					<button hlmBtn variant="ghost" (click)="ctx.close()">Cancel</button>
+					<button hlmBtn>Print</button>
+				</hlm-dialog-footer>
+			</hlm-dialog-content>
+		</hlm-dialog>
+	`,
+})
+class DialogContextMenuStory {}
+
+export const ContextMenu: Story = {
+	name: 'Context Menu',
+	decorators: [
+		moduleMetadata({
+			imports: [DialogContextMenuStory],
+		}),
+	],
+	render: () => ({
+		template: '<dialog-context-menu-story />',
+	}),
+};
+
 type ExampleUser = {
 	name: string;
 	email: string;
@@ -110,6 +172,7 @@ type ExampleUser = {
 	imports: [HlmButton],
 	template: `
 		<button hlmBtn (click)="openDynamicComponent()">Select User</button>
+		<button hlmBtn (click)="openDynamicComponent(false)">Select Team (Dialog without close btn)</button>
 	`,
 })
 class DialogDynamicStory {
@@ -138,12 +201,13 @@ class DialogDynamicStory {
 		},
 	];
 
-	public openDynamicComponent() {
+	public openDynamicComponent(showCloseButton = true) {
 		const dialogRef = this._hlmDialogService.open(SelectUser, {
 			context: {
 				users: this._users,
 			},
 			contentClass: 'sm:!max-w-[750px]',
+			showCloseButton,
 		});
 
 		dialogRef.closed$.subscribe((user) => {

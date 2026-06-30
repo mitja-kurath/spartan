@@ -1,6 +1,9 @@
 import type { RouteMeta } from '@analogjs/router';
 import { Component, computed, inject } from '@angular/core';
+import { injectComponentDocs } from '@spartan-ng/app/app/core/services/component-docs';
 import { PrimitiveSnippetsService } from '@spartan-ng/app/app/core/services/primitive-snippets.service';
+import { CodeRtlPreview } from '@spartan-ng/app/app/shared/code/code-rtl-preview';
+import { RtlHeader } from '@spartan-ng/app/app/shared/code/rtl-header';
 import { InstallTabs } from '@spartan-ng/app/app/shared/layout/install-tabs';
 import { SectionSubSubHeading } from '@spartan-ng/app/app/shared/layout/section-sub-sub-heading';
 import { hlmCode, hlmP } from '@spartan-ng/helm/typography';
@@ -23,6 +26,7 @@ import { FieldInputPreview } from './field--input.preview';
 import { FieldNativeSelectPreview } from './field--native-select.preview';
 import { FieldRadioPreview } from './field--radio.preview';
 import { FieldResponsiveLayoutPreview } from './field--responsive-layout.preview';
+import { FieldRtl } from './field--rtl.preview';
 import { FieldSelectPreview } from './field--select.preview';
 import { FieldSeparatorPreview } from './field--separator.preview';
 import { FieldSetPreview } from './field--set.preview';
@@ -55,6 +59,8 @@ export const routeMeta: RouteMeta = {
 		PageBottomNav,
 		PageBottomNavLink,
 		SectionSubSubHeading,
+		RtlHeader,
+		CodeRtlPreview,
 		FieldPreview,
 		FieldInputPreview,
 		FieldTextareaPreview,
@@ -70,12 +76,14 @@ export const routeMeta: RouteMeta = {
 		FieldGroupPreview,
 		FieldSeparatorPreview,
 		FieldResponsiveLayoutPreview,
+		FieldRtl,
 	],
 	template: `
 		<section spartanMainSection>
 			<spartan-section-intro
 				name="Field"
 				lead="Combine labels, controls, and help text to compose accessible form fields and grouped inputs."
+				showThemeToggle
 			/>
 
 			<spartan-tabs firstTab="Preview" secondTab="Code">
@@ -254,6 +262,14 @@ export const routeMeta: RouteMeta = {
 				<spartan-code secondTab [code]="_separatorCode()" />
 			</spartan-tabs>
 
+			<spartan-header-rtl />
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanRtlCodePreview firstTab>
+					<spartan-field-rtl />
+				</div>
+				<spartan-code secondTab [code]="_rtlCode()" />
+			</spartan-tabs>
+
 			<spartan-section-sub-heading id="responsive-layout">Responsive Layout</spartan-section-sub-heading>
 			<ul class="my-6 ml-6 list-disc">
 				<li class="mt-2">
@@ -308,6 +324,19 @@ export const routeMeta: RouteMeta = {
 					immediately after the control or inside
 					<code class="${hlmCode} mr-0.5">FieldContent</code>
 					to keep error messages aligned with the field.
+				</li>
+				<li class="mt-2">
+					For checkbox or radio groups wrapped in a
+					<code class="${hlmCode} mr-0.5">fieldset</code>
+					, render
+					<code class="${hlmCode} mr-0.5">FieldError</code>
+					as a sibling of the
+					<code class="${hlmCode} mr-0.5">fieldset</code>
+					, not inside it. Because
+					<code class="${hlmCode} mr-0.5">FieldGroup</code>
+					is a container-query context, an error nested in the
+					<code class="${hlmCode} mr-0.5">fieldset</code>
+					triggers a Chrome layout bug that collapses the controls on toggle.
 				</li>
 			</ul>
 			<spartan-code [code]="_validationAndErrorCode" />
@@ -365,6 +394,10 @@ export const routeMeta: RouteMeta = {
 	`,
 })
 export default class FieldPage {
+	constructor() {
+		injectComponentDocs();
+	}
+
 	private readonly _snippets = inject(PrimitiveSnippetsService).getSnippets('field');
 	protected readonly _defaultCode = computed(() => this._snippets()['default']);
 	protected readonly _inputCode = computed(() => this._snippets()['input']);
@@ -380,6 +413,7 @@ export default class FieldPage {
 	protected readonly _choiceCardCode = computed(() => this._snippets()['choiceCard']);
 	protected readonly _groupCode = computed(() => this._snippets()['group']);
 	protected readonly _separatorCode = computed(() => this._snippets()['separator']);
+	protected readonly _rtlCode = computed(() => this._snippets()['rtl']);
 	protected readonly _responsiveLayoutCode = computed(() => this._snippets()['responsiveLayout']);
 
 	protected readonly _defaultSkeleton = defaultSkeleton;

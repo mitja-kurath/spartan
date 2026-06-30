@@ -92,6 +92,10 @@ describe('classes', () => {
 		const testElement = fixture.componentInstance.elementRef().nativeElement;
 		const user = userEvent.setup();
 
+		// Wait for the classes effect to flush after the initial render
+		fixture.detectChanges();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
 		// Initial state should have red classes
 		expect(testElement.className).toBe('bg-red-500 text-white static-class');
 
@@ -290,6 +294,10 @@ describe('classes', () => {
 		const { fixture } = await render(TestComponent);
 		const testElement = fixture.componentInstance.elementRef().nativeElement;
 
+		// Wait for the classes effect to flush after the initial render
+		fixture.detectChanges();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
 		// Initial state: first=red, second=white
 		// Expected: bg-red-500 from first, text-white from second (wins over text-gray-500), p-2 from second
 		expect(testElement.className).toContain('bg-red-500');
@@ -363,26 +371,38 @@ describe('classes', () => {
 		element.className = 'bg-blue-500';
 
 		const elementRef = new ElementRef(element);
+		const rafSpy = vi.spyOn(window, 'requestAnimationFrame');
+		let restoreTransition: FrameRequestCallback | undefined;
 
-		TestBed.runInInjectionContext(() => {
-			classes(() => 'bg-red-500 text-white', { elementRef });
+		rafSpy.mockImplementation((callback: FrameRequestCallback) => {
+			restoreTransition = callback;
+			return 1;
 		});
 
-		// After registration but before effect, transition should be suppressed
-		expect(element.style.getPropertyValue('transition')).toBe('none');
-		expect(element.style.getPropertyPriority('transition')).toBe('important');
+		try {
+			TestBed.runInInjectionContext(() => {
+				classes(() => 'bg-red-500 text-white', { elementRef });
+			});
 
-		// Wait for effect to run
-		await new Promise((resolve) => setTimeout(resolve, 0));
+			// After registration but before effect, transition should be suppressed
+			expect(element.style.getPropertyValue('transition')).toBe('none');
+			expect(element.style.getPropertyPriority('transition')).toBe('important');
 
-		// After effect but before rAF, transition should still be suppressed
-		expect(element.style.getPropertyValue('transition')).toBe('none');
+			// Wait for effect to run
+			await new Promise((resolve) => setTimeout(resolve, 0));
 
-		// Wait for requestAnimationFrame to fire
-		await new Promise((resolve) => requestAnimationFrame(resolve));
+			// After effect but before rAF, transition should still be suppressed
+			expect(element.style.getPropertyValue('transition')).toBe('none');
 
-		// After rAF, transition suppression should be removed
-		expect(element.style.getPropertyValue('transition')).toBe('');
+			// Wait for requestAnimationFrame to fire
+			expect(restoreTransition).toBeDefined();
+			restoreTransition?.(performance.now());
+
+			// After rAF, transition suppression should be removed
+			expect(element.style.getPropertyValue('transition')).toBe('');
+		} finally {
+			rafSpy.mockRestore();
+		}
 	});
 
 	it('should restore pre-existing inline transition after suppression', async () => {
@@ -405,8 +425,9 @@ describe('classes', () => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
 		await new Promise((resolve) => requestAnimationFrame(resolve));
 
-		// Should restore the original transition value
-		expect(element.style.getPropertyValue('transition')).toBe('opacity 0.3s ease');
+		// Should restore the original transition value. A real browser normalizes the shorthand on
+		// assignment - the default `ease` timing function is dropped from the serialized value.
+		expect(element.style.getPropertyValue('transition')).toBe('opacity 0.3s');
 		expect(element.style.getPropertyPriority('transition')).toBe('important');
 	});
 
@@ -451,8 +472,9 @@ describe('classes', () => {
 		// Destroy before the first effect flushes
 		childInjector.destroy();
 
-		// Original transition should be restored immediately by cleanup
-		expect(element.style.getPropertyValue('transition')).toBe('opacity 0.3s ease');
+		// Original transition should be restored immediately by cleanup. A real browser normalizes the
+		// shorthand on assignment - the default `ease` timing function is dropped from the value.
+		expect(element.style.getPropertyValue('transition')).toBe('opacity 0.3s');
 		expect(element.style.getPropertyPriority('transition')).toBe('important');
 	});
 

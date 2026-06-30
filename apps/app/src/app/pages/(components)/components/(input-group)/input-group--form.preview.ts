@@ -1,24 +1,23 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { provideIcons } from '@ng-icons/core';
+import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideInfo } from '@ng-icons/lucide';
-import { HlmIconImports } from '@spartan-ng/helm/icon';
+
 import { HlmInputGroupImports } from '@spartan-ng/helm/input-group';
 import { HlmLabelImports } from '@spartan-ng/helm/label';
 import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
 
 @Component({
 	selector: 'spartan-input-group-form-preview',
-	imports: [ReactiveFormsModule, HlmInputGroupImports, HlmLabelImports, HlmIconImports, HlmTooltipImports],
+	imports: [ReactiveFormsModule, HlmInputGroupImports, HlmLabelImports, HlmTooltipImports, NgIcon],
 	providers: [provideIcons({ lucideInfo })],
-	host: {
-		class: 'grid w-full max-w-sm gap-6',
-	},
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	host: { class: 'grid w-full max-w-sm gap-6' },
 	template: `
 		<form [formGroup]="form" (ngSubmit)="submit()" class="space-y-8">
-			<div hlmInputGroup>
+			<hlm-input-group>
 				<input hlmInputGroupInput id="email-form" placeholder="spartan-ng@github.com" formControlName="email" />
-				<div hlmInputGroupAddon align="block-start">
+				<hlm-input-group-addon align="block-start">
 					<label for="email-form" class="text-foreground" hlmLabel>Email</label>
 					<button
 						hlmInputGroupButton
@@ -31,8 +30,8 @@ import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
 						<ng-icon name="lucideInfo" />
 					</button>
 					<ng-template #tooltip>We'll use this to send you notifications</ng-template>
-				</div>
-				<div hlmInputGroupAddon align="block-end">
+				</hlm-input-group-addon>
+				<hlm-input-group-addon align="block-end">
 					<button
 						hlmInputGroupButton
 						class="ml-auto"
@@ -43,8 +42,8 @@ import { HlmTooltipImports } from '@spartan-ng/helm/tooltip';
 					>
 						Submit
 					</button>
-				</div>
-			</div>
+				</hlm-input-group-addon>
+			</hlm-input-group>
 		</form>
 	`,
 })

@@ -8,7 +8,6 @@ import {
 	contentChildren,
 	Directive,
 	effect,
-	ElementRef,
 	forwardRef,
 	inject,
 	Injector,
@@ -24,7 +23,6 @@ import { type ChangeFn, type TouchFn } from '@spartan-ng/brain/forms';
 import { BrnPopover } from '@spartan-ng/brain/popover';
 import { BrnComboboxChipInput } from './brn-combobox-chip-input';
 import { BrnComboboxContent } from './brn-combobox-content';
-import { BrnComboboxInputWrapper } from './brn-combobox-input-wrapper';
 import { type BrnComboboxItem } from './brn-combobox-item';
 import { BrnComboboxItemToken } from './brn-combobox-item.token';
 import {
@@ -99,28 +97,27 @@ export class BrnComboboxMultiple<T> implements BrnComboboxBase<T>, ControlValueA
 		transform: booleanAttribute,
 	});
 
+	/** Whether to reset the search and close the popover after selecting an item when the search is active. */
+	public readonly closeOnSelect = input<boolean, BooleanInput>(this._config.closeOnSelect, {
+		transform: booleanAttribute,
+	});
+
 	/** The selected values of the combobox. */
-	public readonly value = model<T[] | null>(null);
+	public readonly value = model<T[] | undefined | null>(null);
 
 	public readonly hasValue = computed(() => {
 		const value = this.value();
-		if (value == null) return false;
+		if (value === null || value === undefined) return false;
 		return value.length > 0;
 	});
 
 	/** The current search query. */
 	public readonly search = model<string>('');
 
-	private readonly _searchInputWrapper = contentChild(BrnComboboxInputWrapper, {
-		read: ElementRef,
-	});
+	private readonly _inputWidth = signal<number | null>(null);
 
 	/** @internal The width of the search input wrapper */
-	public readonly searchInputWrapperWidth = computed<number | null>(() => {
-		const inputElement = this._searchInputWrapper()?.nativeElement;
-		if (!inputElement) return null;
-		return inputElement.getBoundingClientRect().width || inputElement.offsetWidth;
-	});
+	public readonly searchInputWrapperWidth = this._inputWidth.asReadonly();
 
 	/** @internal Access all the items within the combobox */
 	public readonly items = contentChildren<BrnComboboxItem<T>>(BrnComboboxItemToken, {
@@ -146,7 +143,7 @@ export class BrnComboboxMultiple<T> implements BrnComboboxBase<T>, ControlValueA
 
 	public readonly labelableId = computed(() => this._comboboxChipInput()?.id());
 
-	protected _onChange?: ChangeFn<T[] | null>;
+	protected _onChange?: ChangeFn<T[] | undefined | null>;
 	protected _onTouched?: TouchFn;
 
 	constructor() {
@@ -185,6 +182,10 @@ export class BrnComboboxMultiple<T> implements BrnComboboxBase<T>, ControlValueA
 		this._comboboxChipInput.set(input);
 	}
 
+	public updateInputWidth(width: number | null): void {
+		this._inputWidth.set(width);
+	}
+
 	public isSelected(itemValue: T): boolean {
 		return this.value()?.some((v) => this.isItemEqualToValue()(itemValue, v)) ?? false;
 	}
@@ -197,7 +198,7 @@ export class BrnComboboxMultiple<T> implements BrnComboboxBase<T>, ControlValueA
 			this.value.set([...selected, itemValue]);
 		}
 
-		if (this.search() !== '') {
+		if (this.closeOnSelect() && this.search() !== '') {
 			// reset search after selection and close popover
 			this.search.set('');
 			this.close();
@@ -239,8 +240,7 @@ export class BrnComboboxMultiple<T> implements BrnComboboxBase<T>, ControlValueA
 		const selected = this.value() ?? [];
 		if (selected.length === 0) return;
 
-		selected.pop();
-		this.value.set([...selected]);
+		this.value.set(selected.slice(0, -1));
 		this._onChange?.(this.value());
 	}
 
@@ -270,11 +270,11 @@ export class BrnComboboxMultiple<T> implements BrnComboboxBase<T>, ControlValueA
 	}
 
 	/** CONTROL VALUE ACCESSOR */
-	public writeValue(value: T[] | null): void {
+	public writeValue(value: T[] | undefined | null): void {
 		this.value.set(value);
 	}
 
-	public registerOnChange(fn: ChangeFn<T[] | null>): void {
+	public registerOnChange(fn: ChangeFn<T[] | undefined | null>): void {
 		this._onChange = fn;
 	}
 

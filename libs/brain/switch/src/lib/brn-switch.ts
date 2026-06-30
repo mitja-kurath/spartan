@@ -16,7 +16,6 @@ import {
 	inject,
 	input,
 	linkedSignal,
-	model,
 	numberAttribute,
 	type OnDestroy,
 	output,
@@ -35,6 +34,8 @@ export const BRN_SWITCH_VALUE_ACCESSOR = {
 	useExisting: forwardRef(() => BrnSwitch),
 	multi: true,
 };
+
+export type BrnSwitchSize = 'default' | 'sm';
 
 const CONTAINER_POST_FIX = '-switch';
 
@@ -66,6 +67,7 @@ let uniqueIdCounter = 0;
 			#switch
 			role="switch"
 			type="button"
+			[attr.data-size]="size()"
 			[class]="class()"
 			[id]="getSwitchButtonId(_state().id) ?? ''"
 			[name]="getSwitchButtonId(_state().name) ?? ''"
@@ -107,7 +109,8 @@ export class BrnSwitch implements AfterContentInit, OnDestroy, ControlValueAcces
 	 * Whether switch is checked/toggled on.
 	 * Can be bound with [(checked)] for two-way binding.
 	 */
-	public readonly checked = model<boolean>(false);
+	public readonly checkedInput = input<boolean, BooleanInput>(false, { alias: 'checked', transform: booleanAttribute });
+	public readonly checked = linkedSignal(this.checkedInput);
 
 	/** Emits when checked state changes. */
 	public readonly checkedChange = output<boolean>();
@@ -129,6 +132,13 @@ export class BrnSwitch implements AfterContentInit, OnDestroy, ControlValueAcces
 	 * CSS classes applied to inner button element.
 	 */
 	public readonly class = input<string | null>(null);
+
+	/**
+	 * Size of the switch.
+	 * Drives the size-keyed registry style rules via the `data-size` attribute.
+	 * @default 'default'
+	 */
+	public readonly size = input<BrnSwitchSize>('default');
 
 	/**
 	 * Accessibility label for screen readers.

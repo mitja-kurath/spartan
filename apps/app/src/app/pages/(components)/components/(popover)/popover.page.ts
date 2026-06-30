@@ -1,7 +1,12 @@
 import type { RouteMeta } from '@analogjs/router';
 import { Component, computed, inject } from '@angular/core';
+import { injectComponentDocs } from '@spartan-ng/app/app/core/services/component-docs';
 import { PrimitiveSnippetsService } from '@spartan-ng/app/app/core/services/primitive-snippets.service';
+import { PopoverRtlPreview } from '@spartan-ng/app/app/pages/(components)/components/(popover)/popover--rtl.example';
+import { CodeRtlPreview } from '@spartan-ng/app/app/shared/code/code-rtl-preview';
+import { RtlHeader } from '@spartan-ng/app/app/shared/code/rtl-header';
 import { InstallTabs } from '@spartan-ng/app/app/shared/layout/install-tabs';
+import { SectionSubSubHeading } from '@spartan-ng/app/app/shared/layout/section-sub-sub-heading';
 import { Code } from '../../../../shared/code/code';
 import { CodePreview } from '../../../../shared/code/code-preview';
 import { MainSection } from '../../../../shared/layout/main-section';
@@ -13,6 +18,8 @@ import { SectionSubHeading } from '../../../../shared/layout/section-sub-heading
 import { Tabs } from '../../../../shared/layout/tabs';
 import { UIApiDocs } from '../../../../shared/layout/ui-docs-section/ui-docs-section';
 import { metaWith } from '../../../../shared/meta/meta.util';
+import { PopoverAlign } from './popover--align.preview';
+import { PopoverBasic } from './popover--basic.preview';
 import { PopoverPreview, defaultImports, defaultSkeleton } from './popover.preview';
 
 export const routeMeta: RouteMeta = {
@@ -29,17 +36,27 @@ export const routeMeta: RouteMeta = {
 		Code,
 		SectionIntro,
 		SectionSubHeading,
+		SectionSubSubHeading,
 		Tabs,
 
 		CodePreview,
 		PageNav,
 		PageBottomNav,
 		PageBottomNavLink,
+		RtlHeader,
+		CodeRtlPreview,
 		PopoverPreview,
+		PopoverBasic,
+		PopoverAlign,
+		PopoverRtlPreview,
 	],
 	template: `
 		<section spartanMainSection>
-			<spartan-section-intro name="Popover" lead="Displays rich content in a portal, triggered by a button." />
+			<spartan-section-intro
+				name="Popover"
+				lead="Displays rich content in a portal, triggered by a button."
+				showThemeToggle
+			/>
 
 			<spartan-tabs firstTab="Preview" secondTab="Code">
 				<div spartanCodePreview firstTab>
@@ -56,6 +73,31 @@ export const routeMeta: RouteMeta = {
 				<spartan-code [code]="_defaultSkeleton" />
 			</div>
 
+			<spartan-section-sub-heading id="examples">Examples</spartan-section-sub-heading>
+			<h3 id="basic" spartanH4>Basic</h3>
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanCodePreview firstTab>
+					<spartan-popover-basic />
+				</div>
+				<spartan-code secondTab [code]="_basicCode()" />
+			</spartan-tabs>
+
+			<h3 id="align" spartanH4>Align</h3>
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanCodePreview firstTab>
+					<spartan-popover-align />
+				</div>
+				<spartan-code secondTab [code]="_alignCode()" />
+			</spartan-tabs>
+
+			<spartan-header-rtl />
+			<spartan-tabs firstTab="Preview" secondTab="Code">
+				<div spartanRtlCodePreview firstTab>
+					<spartan-popover-rtl-preview />
+				</div>
+				<spartan-code secondTab [code]="_rtlCode()" />
+			</spartan-tabs>
+
 			<spartan-section-sub-heading id="brn-api">Brain API</spartan-section-sub-heading>
 			<spartan-ui-api-docs docType="brain" />
 
@@ -70,9 +112,16 @@ export const routeMeta: RouteMeta = {
 		<spartan-page-nav />
 	`,
 })
-export default class LabelPage {
+export default class PopoverPage {
+	constructor() {
+		injectComponentDocs();
+	}
+
 	private readonly _snippets = inject(PrimitiveSnippetsService).getSnippets('popover');
 	protected readonly _defaultCode = computed(() => this._snippets()['default']);
+	protected readonly _basicCode = computed(() => this._snippets()['basic']);
+	protected readonly _alignCode = computed(() => this._snippets()['align']);
+	protected readonly _rtlCode = computed(() => this._snippets()['rtl']);
 	protected readonly _defaultSkeleton = defaultSkeleton;
 	protected readonly _defaultImports = defaultImports;
 }

@@ -4,11 +4,9 @@ import {
 	afterNextRender,
 	booleanAttribute,
 	computed,
-	contentChild,
 	contentChildren,
 	Directive,
 	effect,
-	ElementRef,
 	forwardRef,
 	inject,
 	Injector,
@@ -25,7 +23,6 @@ import { BrnPopover } from '@spartan-ng/brain/popover';
 import { BrnSelectItem } from './brn-select-item';
 import { BrnSelectItemToken } from './brn-select-item.token';
 import { BrnSelectTrigger } from './brn-select-trigger';
-import { BrnSelectTriggerWrapper } from './brn-select-trigger-wrapper';
 import {
 	BrnSelectBase,
 	injectBrnSelectConfig,
@@ -69,11 +66,11 @@ export class BrnSelectMultiple<T> implements BrnSelectBase<T>, ControlValueAcces
 	public readonly disabledState = this._disabled.asReadonly();
 
 	/** The selected value of the select. */
-	public readonly value = model<T[] | null>(null);
+	public readonly value = model<T[] | undefined | null>(null);
 
 	public readonly hasValue = computed(() => {
 		const value = this.value();
-		if (value == null) return false;
+		if (value === null || value === undefined) return false;
 		return value.length > 0;
 	});
 
@@ -83,16 +80,10 @@ export class BrnSelectMultiple<T> implements BrnSelectBase<T>, ControlValueAcces
 	/** A function to convert an item to a string for display. */
 	public readonly itemToString = input<SelectItemToString<T> | undefined>(this._config.itemToString);
 
-	private readonly _triggerWrapper = contentChild(BrnSelectTriggerWrapper, {
-		read: ElementRef,
-	});
+	private readonly _triggerWidth = signal<number | null>(null);
 
 	/** @internal The width of the trigger wrapper */
-	public readonly triggerWidth = computed<number | null>(() => {
-		const element = this._triggerWrapper()?.nativeElement;
-		if (!element) return null;
-		return element.getBoundingClientRect().width || element.offsetWidth;
-	});
+	public readonly triggerWidth = this._triggerWidth.asReadonly();
 
 	/** @internal Access all the items within the select */
 	public readonly items = contentChildren<BrnSelectItem<T>>(BrnSelectItemToken, {
@@ -109,7 +100,7 @@ export class BrnSelectMultiple<T> implements BrnSelectBase<T>, ControlValueAcces
 
 	public readonly labelableId = computed(() => this._selectTrigger()?.id());
 
-	protected _onChange?: ChangeFn<T[] | null>;
+	protected _onChange?: ChangeFn<T[] | undefined | null>;
 	protected _onTouched?: TouchFn;
 
 	constructor() {
@@ -136,7 +127,9 @@ export class BrnSelectMultiple<T> implements BrnSelectBase<T>, ControlValueAcces
 
 					untracked(() => {
 						const index =
-							lastValue !== null ? items.findIndex((item) => this.isItemEqualToValue()(item.value(), lastValue)) : -1;
+							lastValue !== null && lastValue !== undefined
+								? items.findIndex((item) => this.isItemEqualToValue()(item.value(), lastValue))
+								: -1;
 
 						if (index !== -1) {
 							this.keyManager.setActiveItem(index);
@@ -154,6 +147,10 @@ export class BrnSelectMultiple<T> implements BrnSelectBase<T>, ControlValueAcces
 
 	public registerSelectTrigger(input: BrnSelectTrigger): void {
 		return this._selectTrigger.set(input);
+	}
+
+	public updateTriggerWidth(width: number | null): void {
+		this._triggerWidth.set(width);
 	}
 
 	public isSelected(itemValue: T): boolean {
@@ -178,7 +175,7 @@ export class BrnSelectMultiple<T> implements BrnSelectBase<T>, ControlValueAcces
 
 		const value = this.keyManager.activeItem?.value();
 
-		if (value) {
+		if (value !== null && value !== undefined) {
 			this.select(value);
 		} else {
 			this.close();
@@ -191,18 +188,22 @@ export class BrnSelectMultiple<T> implements BrnSelectBase<T>, ControlValueAcces
 		this._brnPopover?.open();
 	}
 
-	private close(): void {
+	public close(): void {
 		if (this._disabled() || !this.isExpanded()) return;
 
 		this._brnPopover?.close();
 	}
 
+	public toggle(): void {
+		this.isExpanded() ? this.close() : this.open();
+	}
+
 	/** CONTROL VALUE ACCESSOR */
-	public writeValue(value: T[] | null): void {
+	public writeValue(value: T[] | undefined | null): void {
 		this.value.set(value);
 	}
 
-	public registerOnChange(fn: ChangeFn<T[] | null>): void {
+	public registerOnChange(fn: ChangeFn<T[] | undefined | null>): void {
 		this._onChange = fn;
 	}
 

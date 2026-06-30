@@ -35,6 +35,7 @@ describe('select', () => {
 			// close select
 			cy.get('body').click();
 			cy.get('[brnselecttrigger]').should('have.focus');
+			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'false');
 		}
 	};
 
@@ -49,6 +50,22 @@ describe('select', () => {
 			cy.get('[brnselecttrigger]').click();
 			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'true');
 			cy.get('body').click();
+			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'false');
+		});
+
+		it('click outside should close the content', () => {
+			verifySelectSetup();
+			cy.get('[brnselecttrigger]').click();
+			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'true');
+			cy.get('body').click();
+			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'false');
+		});
+
+		it('second click on trigger should close the content', () => {
+			verifySelectSetup();
+			cy.get('[brnselecttrigger]').click();
+			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'true');
+			cy.get('[brnselecttrigger]').click();
 			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'false');
 		});
 
@@ -118,7 +135,7 @@ describe('select', () => {
 							cy.get('hlm-select-trigger').contains(optionValue, { matchCase: false });
 							cy.get('hlm-select-trigger').contains(optionValue2, { matchCase: false });
 
-							cy.get('body').click();
+							cy.get('[brnselecttrigger]').click();
 							cy.get('hlm-select-content').should('not.exist');
 							cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'false');
 						});
@@ -163,7 +180,7 @@ describe('select', () => {
 	describe('disabled option', () => {
 		it('should not be able to select a disabled option', () => {
 			cy.visit('/iframe.html?id=select--disabled-option');
-			cy.get('hlm-select-trigger').click();
+			cy.get('[brnselecttrigger]').click();
 			cy.get('hlm-select-item').eq(0).should('not.have.attr', 'data-disabled');
 			cy.get('[data-testid="banana-option"]').should('have.attr', 'aria-disabled', 'true');
 			cy.get('[data-testid="banana-option"]').should('have.attr', 'data-disabled', '');
@@ -230,12 +247,12 @@ describe('select', () => {
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-matches-spartan-invalid');
 
 			// on open
-			cy.get('hlm-select').click();
+			cy.get('[brnselecttrigger]').click();
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-touched');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-dirty');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'aria-invalid');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-matches-spartan-invalid');
-			cy.get('body').click();
+			cy.get('[brnselecttrigger]').click();
 
 			// no selection
 			cy.get('[brnselecttrigger]').should('have.attr', 'data-touched', 'true');
@@ -267,7 +284,7 @@ describe('select', () => {
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-dirty');
 			cy.get('[brnselecttrigger]').should('have.attr', 'aria-invalid', 'true');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-matches-spartan-invalid');
-			cy.get('body').click();
+			cy.get('[brnselecttrigger]').click();
 
 			// no selection
 			cy.get('[brnselecttrigger]').should('have.attr', 'data-touched', 'true');
@@ -299,7 +316,7 @@ describe('select', () => {
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-dirty');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'aria-invalid');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-matches-spartan-invalid');
-			cy.get('body').click();
+			cy.get('[brnselecttrigger]').click();
 
 			// no selection
 			cy.get('[brnselecttrigger]').should('have.attr', 'data-touched', 'true');
@@ -331,7 +348,7 @@ describe('select', () => {
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-dirty');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'aria-invalid');
 			cy.get('[brnselecttrigger]').should('not.have.attr', 'data-matches-spartan-invalid');
-			cy.get('body').click();
+			cy.get('[brnselecttrigger]').click();
 
 			// no selection
 			cy.get('[brnselecttrigger]').should('have.attr', 'data-touched', 'true');
@@ -376,6 +393,25 @@ describe('select', () => {
 			cy.get('hlm-select-content').realMouseWheel({ deltaY: -500 });
 			cy.get('hlm-select-scroll-up').should('exist');
 			cy.get('hlm-select-scroll-down').should('exist');
+		});
+	});
+
+	describe('falsy value', () => {
+		beforeEach(() => {
+			cy.visit('/iframe.html?id=select--falsy-value');
+			cy.injectAxe();
+		});
+
+		it('should select an option with a falsy value on enter keypress', () => {
+			cy.get('[brnselecttrigger]').click();
+
+			cy.realPress('ArrowDown');
+			cy.realPress('Enter');
+
+			// the falsy value is committed and the panel closes
+			cy.get('hlm-select-content').should('not.exist');
+			cy.get('[brnselecttrigger]').should('have.attr', 'aria-expanded', 'false');
+			cy.get('[data-testid="value"]').should('contain.text', 'false');
 		});
 	});
 });

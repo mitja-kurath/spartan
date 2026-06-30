@@ -1,9 +1,9 @@
 import { formatFiles, logger, readJson, type Tree, updateJson } from '@nx/devkit';
 import { getRootTsConfigPathInTree } from '@nx/js';
-import { removeGenerator } from '@nx/workspace';
 import { prompt } from 'enquirer';
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'path';
-import { getOrCreateConfig } from '../../utils/config';
+import { loadOrInitConfig } from '../../utils/config';
 import { readTsConfigPathsFromTree } from '../../utils/tsconfig';
 import { deleteFiles } from '../base/lib/deleteFiles';
 import type { SupportedLibraries } from '../base/lib/supported-libs';
@@ -11,20 +11,46 @@ import { createPrimitiveLibraries } from '../ui/generator';
 import type { Primitive } from '../ui/primitives';
 import type { MigrateHelmLibrariesGeneratorSchema } from './schema';
 
+type RemoveGenerator = (
+	tree: Tree,
+	schema: { projectName: string; forceRemove: boolean; skipFormat: boolean; importPath: string },
+) => Promise<unknown>;
+
+// `@nx/workspace`'s `removeGenerator` is reachable two ways, each broken on a different nx version:
+// importing the package entry eagerly evaluates `convert-to-nx-project`, whose `output.js` crashes
+// ("Cannot read properties of undefined (reading 'inverse')") due to a chalk/tslib interop issue
+// (see https://github.com/nrwl/nx/issues/35521), while the deep `@nx/workspace/src/...` specifier is
+// blocked by the package's `exports` map on nx 23+ (where the compiled file also moved to `dist/`).
+// Resolve the compiled generator by absolute path instead: that bypasses the `exports` gate and never
+// loads the crashing barrel. Lazy, so it only runs when a library actually has to be removed.
+function loadRemoveGenerator(): RemoveGenerator {
+	const workspaceRoot = dirname(require.resolve('@nx/workspace/package.json'));
+	const candidates = [
+		join(workspaceRoot, 'dist', 'src', 'generators', 'remove', 'remove.js'), // nx 23+
+		join(workspaceRoot, 'src', 'generators', 'remove', 'remove.js'), // nx <= 22
+	];
+	for (const candidate of candidates) {
+		if (existsSync(candidate)) {
+			// `require` (not `import()`) so an absolute filesystem path is loaded directly: it bypasses the
+			// package `exports` gate and, unlike dynamic import, accepts native Windows paths (C:\...) without
+			// a file:// URL. This generator already runs as CommonJS.
+			return (require(candidate) as { removeGenerator: RemoveGenerator }).removeGenerator;
+		}
+	}
+	throw new Error(
+		`Could not locate the @nx/workspace remove generator (looked in: ${candidates.join(', ')}). Please report this with your nx version.`,
+	);
+}
+
 export async function migrateHelmLibrariesGenerator(tree: Tree, options: MigrateHelmLibrariesGeneratorSchema) {
 	// Detect the libraries that are already installed
 
-	const config = await getOrCreateConfig(tree, { angularCli: options.angularCli });
+	const config = await loadOrInitConfig(tree, { angularCli: options.angularCli });
 
 	const existingLibraries = await detectLibraries(tree, config.importAlias);
 
 	if (existingLibraries.length === 0) {
 		logger.info('No libraries to migrate');
-		return;
-	}
-
-	// if we are running in Jest we can't use the enquirer prompt
-	if (process.env.JEST_WORKER_ID) {
 		return;
 	}
 
@@ -151,6 +177,7 @@ async function removeExistingLibraries(
 				throw new Error(`Could not find the project name for library: ${library} in project root path ${projectRoot}`);
 			}
 
+			const removeGenerator = loadRemoveGenerator();
 			await removeGenerator(tree, {
 				projectName,
 				forceRemove: true,
@@ -179,7 +206,7 @@ async function regenerateLibraries(tree: Tree, options: MigrateHelmLibrariesGene
 	const supportedLibraries = (await import('../ui/supported-ui-libraries.json').then(
 		(m) => m.default,
 	)) as SupportedLibraries;
-	const config = await getOrCreateConfig(tree, { angularCli: options.angularCli });
+	const config = await loadOrInitConfig(tree, { angularCli: options.angularCli });
 
 	await createPrimitiveLibraries(
 		{
